@@ -17,3 +17,13 @@ for directory in (Path("."), Path("spring-boot-deployment-app"), Path("spring-bo
     tree = (directory / "target/dependency-tree.txt").read_text()
     assert "commons-io:commons-io:" not in tree, tree
     print(str(directory) + ": manages Commons IO 2.22.0; no actual Commons IO dependency")
+
+# Both application modules must use one aligned Log4j backend and the SLF4J 1.x bridge.
+for module in ("spring-boot-deployment-app", "spring-boot-deployment-docker"):
+    tree = (Path(module) / "target/dependency-tree.txt").read_text()
+    artifacts = ("log4j-api", "log4j-core", "log4j-jul", "log4j-web", "log4j-slf4j-impl")
+    for artifact in artifacts:
+        assert "org.apache.logging.log4j:" + artifact + ":jar:2.26.1:compile" in tree, tree
+    assert "log4j-to-slf4j:" not in tree, "Circular logging bridge"
+    assert "logback-classic:" not in tree, "Competing logging backend"
+    print(module + ": aligned Log4j 2.26.1 with SLF4J 1.x bridge")

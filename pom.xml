@@ -109,6 +109,7 @@
 		<junit.version>4.12</junit.version>
 		<javax.servlet-api.version>3.1.0</javax.servlet-api.version>
 		<slf4j.version>1.7.25</slf4j.version>
+		<log4j2.version>2.26.1</log4j2.version>
 	</properties>
 
 	<dependencyManagement>
