@@ -9,7 +9,7 @@
 #   - 3.0.x ~ 3.5.x : JDK 17
 #   - 4.0.x / 4.1.x : JDK 17 / 21
 #
-# Runs `mvn -B clean verify` with dependency convergence checks.
+# Stops at test: package binds Docker build/tag and must not run in CI.
 name: CI
 
 on:
@@ -24,7 +24,7 @@ permissions:
 
 jobs:
   build:
-    name: JDK ${{ matrix.java }} Build & Verify
+    name: JDK ${{ matrix.java }} Compile & Test
     runs-on: ubuntu-latest
     timeout-minutes: 30
     strategy:
@@ -42,13 +42,24 @@ jobs:
           java-version: ${{ matrix.java }}
           cache: maven
 
-      - name: Build and verify
-        run: mvn -B --no-transfer-progress clean verify
+      # Never advance this lifecycle to package/verify: Docker goals bind to package.
+      - name: Compile and run controller regressions (no images)
+        run: mvn -B --no-transfer-progress clean test
+
+      - name: Record effective dependency management and actual dependency trees
+        run: |
+          mvn -B --no-transfer-progress help:effective-pom -Doutput=target/effective-pom.xml
+          mvn -B --no-transfer-progress dependency:tree -DoutputFile=target/dependency-tree.txt
+          python3 scripts/check-dependency-management.py
+
 
       - name: Upload surefire reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: surefire-reports-jdk${{ matrix.java }}
-          path: target/surefire-reports
+          path: |
+            **/target/surefire-reports
+            **/target/effective-pom.xml
+            **/target/dependency-tree.txt
           retention-days: 14
